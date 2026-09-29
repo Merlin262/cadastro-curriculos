@@ -1,6 +1,8 @@
-using CadastroCurriculos.Application.Common.Interfaces;
+using CadastroCurriculos.Domain.Candidates;
 using CadastroCurriculos.Infrastructure.Persistence;
+using CadastroCurriculos.Infrastructure.Persistence.Repositories;
 using CadastroCurriculos.Infrastructure.Resumes;
+using CadastroCurriculos.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +19,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
-        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<ICandidateRepository, CandidateRepository>();
         services.AddScoped<IResumeTextExtractor, PdfPigResumeTextExtractor>();
 
         return services;

@@ -1,24 +1,21 @@
 using CadastroCurriculos.Application.Candidates.Dtos;
-using CadastroCurriculos.Application.Common.Interfaces;
+using CadastroCurriculos.Domain.Candidates;
 using LiteMediator;
-using Microsoft.EntityFrameworkCore;
 
 namespace CadastroCurriculos.Application.Candidates.Queries.GetCandidateById;
 
 public sealed class GetCandidateByIdQueryHandler : IRequestHandler<GetCandidateByIdQuery, CandidateDto?>
 {
-    private readonly IApplicationDbContext _dbContext;
+    private readonly ICandidateRepository _candidateRepository;
 
-    public GetCandidateByIdQueryHandler(IApplicationDbContext dbContext)
+    public GetCandidateByIdQueryHandler(ICandidateRepository candidateRepository)
     {
-        _dbContext = dbContext;
+        _candidateRepository = candidateRepository;
     }
 
     public async Task<CandidateDto?> Handle(GetCandidateByIdQuery request, CancellationToken cancellationToken)
     {
-        var candidate = await _dbContext.Candidates
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
+        var candidate = await _candidateRepository.GetByIdAsync(request.Id, cancellationToken);
 
         if (candidate is null)
         {

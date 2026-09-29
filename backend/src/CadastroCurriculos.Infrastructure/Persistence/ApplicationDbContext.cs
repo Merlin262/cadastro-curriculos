@@ -1,10 +1,9 @@
-using CadastroCurriculos.Application.Common.Interfaces;
 using CadastroCurriculos.Domain.Candidates;
 using Microsoft.EntityFrameworkCore;
 
 namespace CadastroCurriculos.Infrastructure.Persistence;
 
-public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
+public sealed class ApplicationDbContext : DbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)

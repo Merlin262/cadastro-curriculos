@@ -1,26 +1,18 @@
 using CadastroCurriculos.Application.Candidates.Commands.CreateCandidate;
 using CadastroCurriculos.Domain.Candidates;
-using CadastroCurriculos.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using CadastroCurriculos.Infrastructure.Persistence.Repositories;
+using CadastroCurriculos.Tests.TestSupport;
 
 namespace CadastroCurriculos.Tests.Candidates.Commands;
 
 public class CreateCandidateCommandHandlerTests
 {
-    private static ApplicationDbContext CreateInMemoryDbContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
-        return new ApplicationDbContext(options);
-    }
-
     [Fact]
     public async Task Handle_PersistsCandidate_AndReturnsMatchingDto()
     {
-        await using var dbContext = CreateInMemoryDbContext();
-        var handler = new CreateCandidateCommandHandler(dbContext);
+        await using var dbContext = InMemoryDbContextFactory.Create();
+        var repository = new CandidateRepository(dbContext);
+        var handler = new CreateCandidateCommandHandler(repository);
 
         var command = new CreateCandidateCommand(
             "Maria Oliveira",
@@ -42,8 +34,9 @@ public class CreateCandidateCommandHandlerTests
     [Fact]
     public async Task Handle_TrimsWhitespace_FromFields()
     {
-        await using var dbContext = CreateInMemoryDbContext();
-        var handler = new CreateCandidateCommandHandler(dbContext);
+        await using var dbContext = InMemoryDbContextFactory.Create();
+        var repository = new CandidateRepository(dbContext);
+        var handler = new CreateCandidateCommandHandler(repository);
 
         var command = new CreateCandidateCommand(
             "  Maria Oliveira  ",

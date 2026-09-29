@@ -1,5 +1,4 @@
 using CadastroCurriculos.Application.Candidates.Dtos;
-using CadastroCurriculos.Application.Common.Interfaces;
 using CadastroCurriculos.Domain.Candidates;
 using LiteMediator;
 
@@ -7,11 +6,11 @@ namespace CadastroCurriculos.Application.Candidates.Commands.CreateCandidate;
 
 public sealed class CreateCandidateCommandHandler : IRequestHandler<CreateCandidateCommand, CandidateDto>
 {
-    private readonly IApplicationDbContext _dbContext;
+    private readonly ICandidateRepository _candidateRepository;
 
-    public CreateCandidateCommandHandler(IApplicationDbContext dbContext)
+    public CreateCandidateCommandHandler(ICandidateRepository candidateRepository)
     {
-        _dbContext = dbContext;
+        _candidateRepository = candidateRepository;
     }
 
     public async Task<CandidateDto> Handle(CreateCandidateCommand request, CancellationToken cancellationToken)
@@ -25,8 +24,8 @@ public sealed class CreateCandidateCommandHandler : IRequestHandler<CreateCandid
             request.Source,
             request.ResumeFileName);
 
-        _dbContext.Candidates.Add(candidate);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _candidateRepository.AddAsync(candidate, cancellationToken);
+        await _candidateRepository.SaveChangesAsync(cancellationToken);
 
         return new CandidateDto(
             candidate.Id,

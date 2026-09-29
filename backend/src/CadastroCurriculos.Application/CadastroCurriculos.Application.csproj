@@ -9,7 +9,6 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="LiteMediator.Core" Version="0.1.2" />
     <PackageReference Include="LiteMediator.Extensions.DependencyInjection" Version="0.1.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
   </ItemGroup>
 
   <PropertyGroup>
