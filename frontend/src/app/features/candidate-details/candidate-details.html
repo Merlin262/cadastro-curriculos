@@ -1,0 +1,61 @@
+<a mat-button routerLink="/">
+  <mat-icon>arrow_back</mat-icon>
+  Voltar para a listagem
+</a>
+
+@if (loading()) {
+  <div class="state-container">
+    <mat-spinner diameter="40" />
+  </div>
+} @else if (notFound()) {
+  <div class="state-container">
+    <mat-icon>search_off</mat-icon>
+    <p>Candidato não encontrado.</p>
+  </div>
+} @else if (errorMessage()) {
+  <div class="state-container state-container--error">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ errorMessage() }}</p>
+  </div>
+} @else if (candidate()) {
+  <mat-card class="details-card">
+    <mat-card-header>
+      <mat-card-title>{{ candidate()!.fullName }}</mat-card-title>
+      <mat-card-subtitle>
+        Cadastrado em {{ candidate()!.createdAtUtc | date: 'dd/MM/yyyy HH:mm' }}
+        ·
+        <mat-chip [class.chip-pdf]="candidate()!.source === 'Pdf'">
+          {{ candidate()!.source === 'Pdf' ? 'Via PDF' : 'Cadastro manual' }}
+        </mat-chip>
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <dl class="details-grid">
+        <div class="details-grid__item">
+          <dt>E-mail</dt>
+          <dd>{{ candidate()!.email }}</dd>
+        </div>
+        <div class="details-grid__item">
+          <dt>Telefone</dt>
+          <dd>{{ candidate()!.phone || 'Não informado' }}</dd>
+        </div>
+        <div class="details-grid__item">
+          <dt>Área / Cargo de interesse</dt>
+          <dd>{{ candidate()!.areaOfInterest || 'Não informado' }}</dd>
+        </div>
+        @if (candidate()!.resumeFileName) {
+          <div class="details-grid__item">
+            <dt>Arquivo enviado</dt>
+            <dd>{{ candidate()!.resumeFileName }}</dd>
+          </div>
+        }
+      </dl>
+
+      <div class="summary-section">
+        <h3>Resumo profissional</h3>
+        <p>{{ candidate()!.professionalSummary || 'Não informado.' }}</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+}

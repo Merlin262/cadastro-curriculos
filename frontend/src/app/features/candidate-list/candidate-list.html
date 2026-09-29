@@ -1,0 +1,73 @@
+<div class="list-header">
+  <h1>Candidatos cadastrados</h1>
+  <a mat-flat-button color="primary" routerLink="/novo">
+    <mat-icon>add</mat-icon>
+    Novo cadastro
+  </a>
+</div>
+
+@if (loading()) {
+  <div class="state-container">
+    <mat-spinner diameter="40" />
+  </div>
+} @else if (errorMessage()) {
+  <div class="state-container state-container--error">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ errorMessage() }}</p>
+    <button mat-stroked-button (click)="loadCandidates()">Tentar novamente</button>
+  </div>
+} @else if (candidates().length === 0) {
+  <div class="state-container">
+    <mat-icon>folder_open</mat-icon>
+    <p>Nenhum candidato cadastrado ainda.</p>
+    <a mat-flat-button color="primary" routerLink="/novo">Cadastrar o primeiro candidato</a>
+  </div>
+} @else {
+  <table mat-table [dataSource]="candidates()" class="candidates-table">
+    <ng-container matColumnDef="fullName">
+      <th mat-header-cell *matHeaderCellDef>Nome</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.fullName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>E-mail</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.email }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="phone">
+      <th mat-header-cell *matHeaderCellDef>Telefone</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.phone || '—' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="areaOfInterest">
+      <th mat-header-cell *matHeaderCellDef>Área / Cargo</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.areaOfInterest || '—' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="source">
+      <th mat-header-cell *matHeaderCellDef>Origem</th>
+      <td mat-cell *matCellDef="let candidate">
+        <mat-chip [class.chip-pdf]="candidate.source === 'Pdf'">
+          {{ candidate.source === 'Pdf' ? 'PDF' : 'Manual' }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="createdAtUtc">
+      <th mat-header-cell *matHeaderCellDef>Cadastrado em</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.createdAtUtc | date: 'dd/MM/yyyy HH:mm' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let candidate">
+        <a mat-icon-button [routerLink]="['/candidatos', candidate.id]" title="Ver detalhes">
+          <mat-icon>visibility</mat-icon>
+        </a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+  </table>
+}

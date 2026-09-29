@@ -1,0 +1,76 @@
+h1 {
+  font-size: 1.4rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.upload-card {
+  margin-bottom: 1.5rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+}
+
+.button-spinner {
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.field-error {
+  color: #b3261e;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+}
+
+.extraction-success {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #1e7d32;
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.extraction-warnings {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  color: #8a6d00;
+  font-size: 0.875rem;
+
+  li {
+    margin-bottom: 0.2rem;
+  }
+}
+
+.candidate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}

@@ -1,0 +1,141 @@
+<a mat-button routerLink="/">
+  <mat-icon>arrow_back</mat-icon>
+  Voltar para a listagem
+</a>
+
+<h1>Novo cadastro de candidato</h1>
+
+<mat-card class="upload-card">
+  <mat-card-header>
+    <mat-card-title>Enviar currículo em PDF (opcional)</mat-card-title>
+    <mat-card-subtitle>
+      Envie um PDF de até 5 MB para tentar preencher o formulário automaticamente. A extração é
+      apenas uma sugestão: revise e complete os campos antes de salvar.
+    </mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div class="upload-row">
+      <input
+        #fileInput
+        type="file"
+        accept="application/pdf"
+        class="file-input"
+        (change)="onFileSelected($event)"
+      />
+      <button mat-stroked-button type="button" (click)="fileInput.click()">
+        <mat-icon>upload_file</mat-icon>
+        Selecionar PDF
+      </button>
+
+      @if (selectedFileName()) {
+        <span class="selected-file">
+          <mat-icon>description</mat-icon>
+          {{ selectedFileName() }}
+          <button mat-icon-button type="button" (click)="removeFile(); fileInput.value = ''" title="Remover arquivo">
+            <mat-icon>close</mat-icon>
+          </button>
+        </span>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          [disabled]="extracting()"
+          (click)="extractFromPdf()"
+        >
+          @if (extracting()) {
+            <mat-spinner diameter="18" class="button-spinner" />
+          } @else {
+            <mat-icon>auto_fix_high</mat-icon>
+          }
+          Extrair dados do PDF
+        </button>
+      }
+    </div>
+
+    @if (fileError()) {
+      <p class="field-error">{{ fileError() }}</p>
+    }
+
+    @if (extractionDone()) {
+      <p class="extraction-success">
+        <mat-icon>check_circle</mat-icon>
+        Dados extraídos e preenchidos abaixo. Revise antes de salvar.
+      </p>
+    }
+
+    @if (extractionWarnings().length > 0) {
+      <ul class="extraction-warnings">
+        @for (warning of extractionWarnings(); track warning) {
+          <li>{{ warning }}</li>
+        }
+      </ul>
+    }
+  </mat-card-content>
+</mat-card>
+
+<mat-card class="form-card">
+  <mat-card-header>
+    <mat-card-title>Dados do candidato</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="candidate-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome completo</mat-label>
+        <input matInput formControlName="fullName" required maxlength="200" />
+        @if (form.get('fullName')?.invalid && form.get('fullName')?.touched) {
+          <mat-error>{{ getErrorMessage('fullName') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>E-mail</mat-label>
+        <input matInput formControlName="email" required maxlength="200" type="email" />
+        @if (form.get('email')?.invalid && form.get('email')?.touched) {
+          <mat-error>{{ getErrorMessage('email') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Telefone</mat-label>
+        <input matInput formControlName="phone" maxlength="30" />
+        @if (form.get('phone')?.invalid && form.get('phone')?.touched) {
+          <mat-error>{{ getErrorMessage('phone') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Área ou cargo de interesse</mat-label>
+        <input matInput formControlName="areaOfInterest" maxlength="150" />
+        @if (form.get('areaOfInterest')?.invalid && form.get('areaOfInterest')?.touched) {
+          <mat-error>{{ getErrorMessage('areaOfInterest') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Resumo profissional</mat-label>
+        <textarea matInput formControlName="professionalSummary" rows="5" maxlength="4000"></textarea>
+        @if (form.get('professionalSummary')?.invalid && form.get('professionalSummary')?.touched) {
+          <mat-error>{{ getErrorMessage('professionalSummary') }}</mat-error>
+        }
+      </mat-form-field>
+
+      @if (submitError()) {
+        <p class="field-error">{{ submitError() }}</p>
+      }
+
+      <div class="form-actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+          @if (submitting()) {
+            <mat-spinner diameter="18" class="button-spinner" />
+          } @else {
+            <mat-icon>save</mat-icon>
+          }
+          Salvar cadastro
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>
