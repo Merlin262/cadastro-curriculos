@@ -34,9 +34,9 @@ desenvolvimento, decisões técnicas e uso de IA.
 ```
 backend/            Solução .NET (Clean Architecture: Domain/Application/Infrastructure/Api)
   src/
-    CadastroCurriculos.Domain          Entidade Candidate (sem dependências externas)
+    CadastroCurriculos.Domain          Entidade Candidate e ICandidateRepository (sem dependências externas)
     CadastroCurriculos.Application     Commands/Queries (CQRS via LiteMediator), validação, DTOs
-    CadastroCurriculos.Infrastructure  EF Core (SQL Server), leitura de PDF (PdfPig), migrations
+    CadastroCurriculos.Infrastructure  CandidateRepository (EF Core/SQL Server), leitura de PDF (PdfPig), migrations
     CadastroCurriculos.Api             Controllers, middleware de erros, Program.cs
   tests/
     CadastroCurriculos.Tests           Testes unitários (xUnit)

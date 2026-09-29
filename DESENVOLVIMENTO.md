@@ -36,6 +36,14 @@ documentação), então o histórico do `git log` reflete a evolução real do t
   infraestrutura (EF Core, PdfPig). Isso deixa o CQRS com LiteMediator organizado por caso de uso
   (uma pasta por command/query) e facilita testar a lógica de negócio sem banco de dados real
   (usei EF Core InMemory nos testes de handler).
+- **Repository pattern entre Application e Infrastructure.** Os handlers dependem só de
+  `ICandidateRepository` (definida no Domain), implementada por `CandidateRepository` no
+  Infrastructure com EF Core. Antes disso, os handlers recebiam um `IApplicationDbContext` que
+  expunha `DbSet<Candidate>` diretamente — funcionava, mas vazava um detalhe do EF Core (o
+  `DbSet`) para a camada de Application. Com o repositório, a Application não referencia mais o
+  pacote do EF Core: só conhece a entidade de domínio e o contrato do repositório
+  (`AddAsync`/`GetByIdAsync`/`GetAllAsync`/`SaveChangesAsync`). Testei o repositório isoladamente
+  (`CandidateRepositoryTests`, com EF Core InMemory) além de continuar testando os handlers.
 - **Mesmo endpoint e mesma validação para os dois fluxos de cadastro.** `POST /api/candidates`
   é usado tanto pelo cadastro manual quanto pelo cadastro via PDF — depois de extrair os dados do
   PDF, o frontend só pré-preenche o mesmo formulário, que o usuário revisa e envia do mesmo jeito.
