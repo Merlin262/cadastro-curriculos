@@ -1,0 +1,26 @@
+# .NET
+backend/**/bin/
+backend/**/obj/
+*.user
+*.suo
+
+# Angular / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+npm-debug.log*
+
+# IDE
+.vs/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / local overrides (never commit real credentials)
+**/appsettings.Local.json
+**/appsettings.*.Local.json
+**/.env
+**/.env.local
