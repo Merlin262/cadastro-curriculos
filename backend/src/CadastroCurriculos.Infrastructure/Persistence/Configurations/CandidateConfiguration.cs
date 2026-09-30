@@ -32,6 +32,11 @@ public sealed class CandidateConfiguration : IEntityTypeConfiguration<Candidate>
         builder.Property(c => c.ResumeFileName)
             .HasMaxLength(260);
 
+        // No HasMaxLength -> maps to varbinary(max); files are capped at 5 MB by validation.
+        builder.Property(c => c.ResumeFileContent);
+
+        builder.Ignore(c => c.HasResumeFile);
+
         builder.Property(c => c.Source)
             .HasConversion<string>()
             .HasMaxLength(20)

@@ -20,4 +20,7 @@ public sealed record CandidateDto(
     string? ProfessionalSummary,
     CandidateSource Source,
     string? ResumeFileName,
+    bool HasResumeFile,
     DateTime CreatedAtUtc);
+
+public sealed record CandidateResumeDto(byte[] Content, string FileName);

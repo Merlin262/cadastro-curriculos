@@ -22,7 +22,8 @@ public sealed class CreateCandidateCommandHandler : IRequestHandler<CreateCandid
             request.AreaOfInterest,
             request.ProfessionalSummary,
             request.Source,
-            request.ResumeFileName);
+            request.ResumeFileName,
+            request.ResumeFileContent);
 
         await _candidateRepository.AddAsync(candidate, cancellationToken);
         await _candidateRepository.SaveChangesAsync(cancellationToken);
@@ -36,6 +37,7 @@ public sealed class CreateCandidateCommandHandler : IRequestHandler<CreateCandid
             candidate.ProfessionalSummary,
             candidate.Source,
             candidate.ResumeFileName,
+            candidate.HasResumeFile,
             candidate.CreatedAtUtc);
     }
 }

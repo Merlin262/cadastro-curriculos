@@ -31,6 +31,7 @@ public sealed class GetCandidateByIdQueryHandler : IRequestHandler<GetCandidateB
             candidate.ProfessionalSummary,
             candidate.Source,
             candidate.ResumeFileName,
+            candidate.HasResumeFile,
             candidate.CreatedAtUtc);
     }
 }

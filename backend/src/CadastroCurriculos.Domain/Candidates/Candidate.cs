@@ -16,7 +16,10 @@ public sealed class Candidate
     public string? ProfessionalSummary { get; private set; }
     public CandidateSource Source { get; private set; }
     public string? ResumeFileName { get; private set; }
+    public byte[]? ResumeFileContent { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
+
+    public bool HasResumeFile => ResumeFileContent is not null;
 
     private Candidate()
     {
@@ -29,7 +32,8 @@ public sealed class Candidate
         string? areaOfInterest,
         string? professionalSummary,
         CandidateSource source,
-        string? resumeFileName)
+        string? resumeFileName,
+        byte[]? resumeFileContent = null)
     {
         Id = Guid.NewGuid();
         FullName = fullName.Trim();
@@ -39,6 +43,7 @@ public sealed class Candidate
         ProfessionalSummary = string.IsNullOrWhiteSpace(professionalSummary) ? null : professionalSummary.Trim();
         Source = source;
         ResumeFileName = resumeFileName;
+        ResumeFileContent = resumeFileContent;
         CreatedAtUtc = DateTime.UtcNow;
     }
 }

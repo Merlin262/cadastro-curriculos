@@ -34,7 +34,7 @@ public class CandidateRepositoryTests
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsEveryCandidate_MostRecentFirst()
+    public async Task GetPagedAsync_ReturnsEveryCandidate_MostRecentFirst()
     {
         await using var dbContext = InMemoryDbContextFactory.Create();
         var repository = new CandidateRepository(dbContext);
@@ -49,21 +49,75 @@ public class CandidateRepositoryTests
         await repository.AddAsync(newer, CancellationToken.None);
         await repository.SaveChangesAsync(CancellationToken.None);
 
-        var result = await repository.GetAllAsync(CancellationToken.None);
+        var (items, totalCount) = await repository.GetPagedAsync(null, 1, 10, CancellationToken.None);
 
-        Assert.Equal(2, result.Count);
-        Assert.Equal(newer.Id, result[0].Id);
-        Assert.Equal(older.Id, result[1].Id);
+        Assert.Equal(2, totalCount);
+        Assert.Equal(2, items.Count);
+        Assert.Equal(newer.Id, items[0].Id);
+        Assert.Equal(older.Id, items[1].Id);
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsEmpty_WhenThereAreNoCandidates()
+    public async Task GetPagedAsync_ReturnsEmpty_WhenThereAreNoCandidates()
     {
         await using var dbContext = InMemoryDbContextFactory.Create();
         var repository = new CandidateRepository(dbContext);
 
-        var result = await repository.GetAllAsync(CancellationToken.None);
+        var (items, totalCount) = await repository.GetPagedAsync(null, 1, 10, CancellationToken.None);
 
-        Assert.Empty(result);
+        Assert.Empty(items);
+        Assert.Equal(0, totalCount);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FiltersByNameOrEmail()
+    {
+        await using var dbContext = InMemoryDbContextFactory.Create();
+        var repository = new CandidateRepository(dbContext);
+
+        var match = new Candidate("Ana Costa", "ana.costa@example.com", null, null, null, CandidateSource.Manual, null);
+        var noMatch = new Candidate("Bruno Lima", "bruno@example.com", null, null, null, CandidateSource.Manual, null);
+        await repository.AddAsync(match, CancellationToken.None);
+        await repository.AddAsync(noMatch, CancellationToken.None);
+        await repository.SaveChangesAsync(CancellationToken.None);
+
+        var (items, totalCount) = await repository.GetPagedAsync("costa", 1, 10, CancellationToken.None);
+
+        Assert.Equal(1, totalCount);
+        Assert.Equal(match.Id, items[0].Id);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_AppliesSkipAndTake()
+    {
+        await using var dbContext = InMemoryDbContextFactory.Create();
+        var repository = new CandidateRepository(dbContext);
+
+        for (var i = 0; i < 5; i++)
+        {
+            await repository.AddAsync(
+                new Candidate($"Candidato {i}", $"c{i}@example.com", null, null, null, CandidateSource.Manual, null),
+                CancellationToken.None);
+        }
+
+        await repository.SaveChangesAsync(CancellationToken.None);
+
+        var (items, totalCount) = await repository.GetPagedAsync(null, page: 2, pageSize: 2, CancellationToken.None);
+
+        Assert.Equal(5, totalCount);
+        Assert.Equal(2, items.Count);
+    }
+
+    [Fact]
+    public async Task EmailExistsAsync_ReturnsTrue_OnlyWhenEmailIsAlreadyRegistered()
+    {
+        await using var dbContext = InMemoryDbContextFactory.Create();
+        var repository = new CandidateRepository(dbContext);
+        var candidate = new Candidate("Ana Costa", "ana@example.com", null, null, null, CandidateSource.Manual, null);
+        await repository.AddAsync(candidate, CancellationToken.None);
+        await repository.SaveChangesAsync(CancellationToken.None);
+
+        Assert.True(await repository.EmailExistsAsync("ana@example.com", CancellationToken.None));
+        Assert.False(await repository.EmailExistsAsync("outro@example.com", CancellationToken.None));
     }
 }

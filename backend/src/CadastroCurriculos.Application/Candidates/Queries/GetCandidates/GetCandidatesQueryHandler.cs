@@ -1,10 +1,11 @@
 using CadastroCurriculos.Application.Candidates.Dtos;
+using CadastroCurriculos.Application.Common;
 using CadastroCurriculos.Domain.Candidates;
 using LiteMediator;
 
 namespace CadastroCurriculos.Application.Candidates.Queries.GetCandidates;
 
-public sealed class GetCandidatesQueryHandler : IRequestHandler<GetCandidatesQuery, List<CandidateListItemDto>>
+public sealed class GetCandidatesQueryHandler : IRequestHandler<GetCandidatesQuery, PagedResult<CandidateListItemDto>>
 {
     private readonly ICandidateRepository _candidateRepository;
 
@@ -13,11 +14,12 @@ public sealed class GetCandidatesQueryHandler : IRequestHandler<GetCandidatesQue
         _candidateRepository = candidateRepository;
     }
 
-    public async Task<List<CandidateListItemDto>> Handle(GetCandidatesQuery request, CancellationToken cancellationToken)
+    public async Task<PagedResult<CandidateListItemDto>> Handle(GetCandidatesQuery request, CancellationToken cancellationToken)
     {
-        var candidates = await _candidateRepository.GetAllAsync(cancellationToken);
+        var (items, totalCount) = await _candidateRepository.GetPagedAsync(
+            request.Search, request.Page, request.PageSize, cancellationToken);
 
-        return candidates
+        var dtos = items
             .Select(c => new CandidateListItemDto(
                 c.Id,
                 c.FullName,
@@ -27,5 +29,7 @@ public sealed class GetCandidatesQueryHandler : IRequestHandler<GetCandidatesQue
                 c.Source,
                 c.CreatedAtUtc))
             .ToList();
+
+        return new PagedResult<CandidateListItemDto>(dtos, totalCount, request.Page, request.PageSize);
     }
 }

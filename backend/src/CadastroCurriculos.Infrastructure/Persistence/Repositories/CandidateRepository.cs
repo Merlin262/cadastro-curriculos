@@ -24,12 +24,34 @@ public sealed class CandidateRepository : ICandidateRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Candidate>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Candidate> Items, int TotalCount)> GetPagedAsync(
+        string? search, int page, int pageSize, CancellationToken cancellationToken)
     {
-        return await _dbContext.Candidates
-            .AsNoTracking()
+        var query = _dbContext.Candidates.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(c => c.FullName.Contains(term) || c.Email.Contains(term));
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
             .OrderByDescending(c => c.CreatedAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
+    public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken)
+    {
+        var normalized = email.Trim();
+        return _dbContext.Candidates
+            .AsNoTracking()
+            .AnyAsync(c => c.Email == normalized, cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

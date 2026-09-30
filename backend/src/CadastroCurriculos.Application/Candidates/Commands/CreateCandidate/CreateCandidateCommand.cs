@@ -11,4 +11,5 @@ public sealed record CreateCandidateCommand(
     string? AreaOfInterest,
     string? ProfessionalSummary,
     CandidateSource Source,
-    string? ResumeFileName) : IRequest<CandidateDto>;
+    string? ResumeFileName,
+    byte[]? ResumeFileContent) : IRequest<CandidateDto>;

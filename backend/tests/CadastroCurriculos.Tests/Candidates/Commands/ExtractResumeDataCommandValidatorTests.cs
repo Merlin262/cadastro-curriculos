@@ -1,5 +1,6 @@
 using System.Text;
 using CadastroCurriculos.Application.Candidates.Commands.ExtractResumeData;
+using CadastroCurriculos.Application.Common;
 
 namespace CadastroCurriculos.Tests.Candidates.Commands;
 
@@ -33,7 +34,7 @@ public class ExtractResumeDataCommandValidatorTests
     [Fact]
     public void Validate_Fails_WhenFileExceedsFiveMegabytes()
     {
-        var oversized = FakePdfBytes(ExtractResumeDataCommandValidator.MaxFileSizeBytes + 1);
+        var oversized = FakePdfBytes(PdfFileRules.MaxFileSizeBytes + 1);
         var command = new ExtractResumeDataCommand(oversized, "curriculo.pdf");
 
         var result = _validator.Validate(command);
