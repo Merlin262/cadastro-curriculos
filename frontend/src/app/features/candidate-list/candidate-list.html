@@ -6,6 +6,17 @@
   </a>
 </div>
 
+<mat-form-field appearance="outline" class="search-field">
+  <mat-label>Buscar por nome ou e-mail</mat-label>
+  <input
+    matInput
+    [value]="searchTerm()"
+    (input)="onSearchInput($any($event.target).value)"
+    placeholder="Ex.: Maria, maria@empresa.com"
+  />
+  <mat-icon matSuffix>search</mat-icon>
+</mat-form-field>
+
 @if (loading()) {
   <div class="state-container">
     <mat-spinner diameter="40" />
@@ -18,9 +29,13 @@
   </div>
 } @else if (candidates().length === 0) {
   <div class="state-container">
-    <mat-icon>folder_open</mat-icon>
-    <p>Nenhum candidato cadastrado ainda.</p>
-    <a mat-flat-button color="primary" routerLink="/novo">Cadastrar o primeiro candidato</a>
+    <mat-icon>{{ searchTerm() ? 'search_off' : 'folder_open' }}</mat-icon>
+    @if (searchTerm()) {
+      <p>Nenhum candidato encontrado para "{{ searchTerm() }}".</p>
+    } @else {
+      <p>Nenhum candidato cadastrado ainda.</p>
+      <a mat-flat-button color="primary" routerLink="/novo">Cadastrar o primeiro candidato</a>
+    }
   </div>
 } @else {
   <table mat-table [dataSource]="candidates()" class="candidates-table">
@@ -70,4 +85,12 @@
     <tr mat-header-row *matHeaderRowDef="columns"></tr>
     <tr mat-row *matRowDef="let row; columns: columns"></tr>
   </table>
+
+  <mat-paginator
+    [length]="totalCount()"
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[5, 10, 25, 50]"
+    (page)="onPageChange($event)"
+  />
 }

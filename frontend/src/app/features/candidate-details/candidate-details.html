@@ -47,7 +47,20 @@
         @if (candidate()!.resumeFileName) {
           <div class="details-grid__item">
             <dt>Arquivo enviado</dt>
-            <dd>{{ candidate()!.resumeFileName }}</dd>
+            <dd>
+              {{ candidate()!.resumeFileName }}
+              @if (candidate()!.hasResumeFile) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="downloadingResume()"
+                  (click)="downloadResume()"
+                  title="Baixar currículo original"
+                >
+                  <mat-icon>download</mat-icon>
+                </button>
+              }
+            </dd>
           </div>
         }
       </dl>

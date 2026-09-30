@@ -92,11 +92,18 @@
 
       <mat-form-field appearance="outline">
         <mat-label>E-mail</mat-label>
-        <input matInput formControlName="email" required maxlength="200" type="email" />
+        <input matInput formControlName="email" required maxlength="200" type="email" (blur)="onEmailBlur()" />
         @if (form.get('email')?.invalid && form.get('email')?.touched) {
           <mat-error>{{ getErrorMessage('email') }}</mat-error>
         }
       </mat-form-field>
+
+      @if (emailAlreadyExists()) {
+        <p class="field-warning">
+          <mat-icon inline>warning</mat-icon>
+          Já existe um candidato cadastrado com este e-mail. Você ainda pode salvar, se desejar.
+        </p>
+      }
 
       <mat-form-field appearance="outline">
         <mat-label>Telefone</mat-label>

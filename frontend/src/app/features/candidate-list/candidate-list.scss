@@ -10,6 +10,13 @@
   }
 }
 
+.search-field {
+  width: 100%;
+  max-width: 420px;
+  display: block;
+  margin-bottom: 1rem;
+}
+
 .state-container {
   display: flex;
   flex-direction: column;

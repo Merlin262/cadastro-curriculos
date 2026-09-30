@@ -51,10 +51,41 @@ export class CandidateForm {
   readonly extractionWarnings = signal<string[]>([]);
   readonly submitting = signal(false);
   readonly submitError = signal<string | null>(null);
+  readonly emailAlreadyExists = signal(false);
+  readonly checkingEmail = signal(false);
 
   private selectedFile: File | null = null;
   private source: CandidateSource = 'Manual';
-  private resumeFileName: string | null = null;
+  private lastCheckedEmail: string | null = null;
+
+  constructor() {
+    this.form.controls.email.valueChanges.subscribe((value) => {
+      if (value !== this.lastCheckedEmail) {
+        this.emailAlreadyExists.set(false);
+      }
+    });
+  }
+
+  onEmailBlur(): void {
+    const emailControl = this.form.controls.email;
+    const email = emailControl.value.trim();
+
+    if (!email || emailControl.hasError('email')) {
+      return;
+    }
+
+    this.checkingEmail.set(true);
+    this.candidatesService.checkEmailExists(email).subscribe({
+      next: (result) => {
+        this.checkingEmail.set(false);
+        this.lastCheckedEmail = email;
+        this.emailAlreadyExists.set(result.exists);
+      },
+      error: () => {
+        this.checkingEmail.set(false);
+      },
+    });
+  }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -106,7 +137,6 @@ export class CandidateForm {
         this.extractionDone.set(true);
         this.extractionWarnings.set(result.warnings);
         this.source = 'Pdf';
-        this.resumeFileName = file.name;
 
         if (result.fullName) {
           this.form.controls.fullName.setValue(result.fullName);
@@ -132,7 +162,6 @@ export class CandidateForm {
     this.extractionWarnings.set([]);
     this.extractionDone.set(false);
     this.source = 'Manual';
-    this.resumeFileName = null;
   }
 
   submit(): void {
@@ -147,15 +176,17 @@ export class CandidateForm {
     const value = this.form.getRawValue();
 
     this.candidatesService
-      .create({
-        fullName: value.fullName,
-        email: value.email,
-        phone: value.phone || null,
-        areaOfInterest: value.areaOfInterest || null,
-        professionalSummary: value.professionalSummary || null,
-        source: this.source,
-        resumeFileName: this.resumeFileName,
-      })
+      .create(
+        {
+          fullName: value.fullName,
+          email: value.email,
+          phone: value.phone || null,
+          areaOfInterest: value.areaOfInterest || null,
+          professionalSummary: value.professionalSummary || null,
+          source: this.source,
+        },
+        this.selectedFile,
+      )
       .subscribe({
         next: (candidate) => {
           this.submitting.set(false);

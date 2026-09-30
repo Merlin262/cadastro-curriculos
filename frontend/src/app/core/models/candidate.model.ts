@@ -13,6 +13,7 @@ export interface CandidateListItem {
 export interface Candidate extends CandidateListItem {
   professionalSummary: string | null;
   resumeFileName: string | null;
+  hasResumeFile: boolean;
 }
 
 export interface CreateCandidateRequest {
@@ -22,7 +23,6 @@ export interface CreateCandidateRequest {
   areaOfInterest?: string | null;
   professionalSummary?: string | null;
   source?: CandidateSource;
-  resumeFileName?: string | null;
 }
 
 export interface ExtractedResumeData {
@@ -31,4 +31,17 @@ export interface ExtractedResumeData {
   email: string | null;
   phone: string | null;
   warnings: string[];
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CandidatesQueryParams {
+  search?: string;
+  page: number;
+  pageSize: number;
 }
