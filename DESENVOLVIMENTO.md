@@ -104,6 +104,12 @@ evolução real do trabalho.
   às vezes falhar na primeira tentativa de migration. Resolvi nas duas pontas: um healthcheck no
   `docker-compose.yml` (via `sqlcmd`) e um laço de retry com espera de 5s no próprio `Program.cs`
   (útil também fora do Docker, se o SQL Server demorar para responder).
+- **CI no GitHub Actions builda por `.csproj` explícito, não pela solução.** O
+  `CadastroCurriculos.slnx` foi gerado pelo SDK .NET 10 (formato novo, `.slnx`); o runner do
+  GitHub Actions usa .NET 8 (a mesma versão que o projeto usa em runtime), cujo SDK não entende
+  esse formato. Para não depender disso, o workflow restaura/builda/testa apontando direto para
+  os `.csproj` do `Api` e do `Tests` — como `Tests` não referencia `Api`, buildo os dois
+  explicitamente para garantir que a solução inteira compila, não só o que os testes alcançam.
 
 ## Ferramentas de IA utilizadas
 
@@ -196,6 +202,10 @@ evolução real do trabalho.
   `package-lock.json` (gerado no Windows) não tinha duas dependências opcionais de
   `@napi-rs/wasm-runtime` que só resolvem no Linux; troquei por `npm install` nesse estágio do
   build (ver próxima seção).
+- **CI:** validei localmente, com os `.csproj` explícitos e sem tocar no `.slnx`, exatamente os
+  comandos que o workflow do GitHub Actions executa (`dotnet restore`/`build`/`test` do `Api` e do
+  `Tests`, e `npm install` + `ng test --watch=false` + `npm run build` do frontend) — os 53 testes
+  de backend e a build de produção do frontend passam do mesmo jeito fora do CI.
 
 ## Tempo aproximado dedicado
 
@@ -221,9 +231,8 @@ um manualmente antes de seguir para o próximo. Total aproximado: **4,5 a 6 hora
 - **Sem testes end-to-end (Cypress/Playwright).** A cobertura atual é unitária nos dois lados; um
   teste E2E dos dois fluxos de cadastro completos (formulário → API → banco → listagem →
   detalhes) seria o próximo passo natural.
-- **Sem pipeline de CI configurado** (ex.: GitHub Actions rodando `dotnet test` e `ng test` a cada
-  push, e talvez também um `docker compose build` de sanidade) — faria parte de uma entrega para
-  produção.
+- **CI não roda o `docker compose build`** — só `dotnet test`/`ng test` e os respectivos builds.
+  Adicionar um terceiro job de sanidade do Docker seria natural com mais tempo.
 - **Heurística de telefone assume formato brasileiro.** Funcionaria mal para currículos com
   números de outros países; seria necessário generalizar o regex ou detectar o idioma/localidade
   do documento.

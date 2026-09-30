@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # Restore/build/test by explicit .csproj path (not the solution file): the repo's
+      # CadastroCurriculos.slnx uses the newer .slnx format, which the .NET 8 SDK used here
+      # doesn't understand. Building the Api project too (not just the test project's own
+      # dependency graph) makes sure the whole solution compiles, since Tests doesn't
+      # reference Api.
+      - name: Restore
+        working-directory: backend
+        run: |
+          dotnet restore src/CadastroCurriculos.Api/CadastroCurriculos.Api.csproj
+          dotnet restore tests/CadastroCurriculos.Tests/CadastroCurriculos.Tests.csproj
+
+      - name: Build
+        working-directory: backend
+        run: |
+          dotnet build src/CadastroCurriculos.Api/CadastroCurriculos.Api.csproj --no-restore --configuration Release
+          dotnet build tests/CadastroCurriculos.Tests/CadastroCurriculos.Tests.csproj --no-restore --configuration Release
+
+      - name: Test
+        working-directory: backend
+        run: dotnet test tests/CadastroCurriculos.Tests/CadastroCurriculos.Tests.csproj --no-build --configuration Release --logger "console;verbosity=normal"
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci fails here: the lock file (generated on Windows) is missing a couple of
+      # @napi-rs/wasm-runtime peer deps that only resolve on Linux - same fix as the frontend
+      # Dockerfile (see DESENVOLVIMENTO.md).
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Run tests
+        working-directory: frontend
+        run: npx ng test --watch=false
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build

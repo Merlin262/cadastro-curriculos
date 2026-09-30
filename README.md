@@ -1,5 +1,7 @@
 # Cadastro de Currículos
 
+[![CI](https://github.com/Merlin262/cadastro-curriculos/actions/workflows/ci.yml/badge.svg)](https://github.com/Merlin262/cadastro-curriculos/actions/workflows/ci.yml)
+
 Aplicação para cadastro e consulta de candidatos, desenvolvida como desafio técnico. Permite
 cadastro manual e cadastro a partir de um PDF de currículo (o backend extrai o texto e tenta
 identificar nome, e-mail e telefone para pré-preencher o formulário), com listagem paginada e
@@ -155,6 +157,9 @@ aviso de e-mail duplicado, busca/paginação da listagem):
 cd frontend
 npm test
 ```
+
+Os dois suítes também rodam automaticamente a cada `push`/`pull request` via GitHub Actions
+(`.github/workflows/ci.yml`) — veja o badge no topo deste README ou a aba *Actions* do repositório.
 
 ## Testando a importação de PDF
 
