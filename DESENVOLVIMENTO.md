@@ -24,10 +24,18 @@ desenvolvimento, na seguinte ordem:
 6. **Validação manual do frontend.** Rodei a aplicação em um navegador controlado pela ferramenta
    e exerci os fluxos principais (cadastro manual completo, navegação para detalhes, validação de
    campos obrigatórios) antes de escrever os testes automatizados do Angular.
-7. **Documentação.** Por último, escrevi o `README.md` e este `DESENVOLVIMENTO.md`.
+7. **Documentação.** Escrevi o `README.md` e este `DESENVOLVIMENTO.md` com o estado do projeto até
+   ali (cadastro manual/PDF, listagem, detalhes, Repository pattern).
+8. **Segunda iteração: quatro extras.** Depois da entrega inicial, adicionei Docker Compose
+   (SQL Server + backend + frontend), armazenamento/download do PDF original, paginação e busca na
+   listagem, e aviso não bloqueante de e-mail duplicado — cada um already listado como limitação
+   ou melhoria futura na primeira versão deste documento. Segui a mesma disciplina: mudança no
+   backend → migration → teste automatizado → validação manual com `curl` → mudança no frontend →
+   validação manual no navegador, um extra de cada vez.
 
 Os commits do repositório seguem essa mesma sequência (backend → testes de backend → frontend →
-documentação), então o histórico do `git log` reflete a evolução real do trabalho.
+documentação → Repository pattern → os quatro extras), então o histórico do `git log` reflete a
+evolução real do trabalho.
 
 ## Principais decisões técnicas
 
@@ -71,6 +79,31 @@ documentação), então o histórico do `git log` reflete a evolução real do t
 - **Migrations do EF Core aplicadas automaticamente no startup** (`Database.Migrate()` em
   `Program.cs`), além de também poderem ser aplicadas manualmente via `dotnet ef database
   update` — reduz o atrito para quem for rodar o projeto pela primeira vez.
+- **PDF original guardado como `varbinary(max)` na própria tabela `Candidates`**, não em blob
+  storage separado. Como o arquivo já é limitado a 5 MB pela validação, guardar no banco evita
+  precisar de um segundo serviço/volume só para isso — simples o suficiente para o escopo, e o
+  endpoint de detalhes (`CandidateDto`) nunca inclui os bytes (só um `hasResumeFile: bool`), então
+  listar/consultar candidatos não fica pesado; só o endpoint dedicado `GET /{id}/resume` lê o
+  conteúdo binário.
+- **Reenvio do arquivo no `POST /api/candidates` em vez de cache temporário no servidor.** O fluxo
+  de PDF já chama `extract-resume` uma vez para pré-preencher o formulário; para salvar, o mesmo
+  arquivo é reenviado junto com os campos de texto (`multipart/form-data`). Cogitei cachear o
+  arquivo no backend entre a extração e o salvamento (evitando o re-upload), mas isso exigiria
+  armazenamento temporário com expiração/limpeza — complexidade desproporcional para um arquivo de
+  até 5 MB. Reenviar é mais simples e sem estado.
+- **Busca com `Contains` (vira `LIKE '%termo%'` no SQL Server), sem exigir correspondência exata.**
+  Simples e cobre o caso de uso (encontrar por parte do nome ou e-mail); não tratei caracteres
+  curinga do LIKE (`%`, `_`) digitados pelo usuário como literais, o que é uma limitação aceitável
+  para uma busca informal deste tipo.
+- **Aviso de e-mail duplicado é só um aviso.** O endpoint `GET /check-email` é consultado quando o
+  campo de e-mail perde o foco no formulário; se já existir, mostra uma mensagem amarela mas não
+  desabilita o botão de salvar nem adiciona erro de validação — o enunciado não pede unicidade de
+  e-mail, então bloquear seria inventar uma regra de negócio que não foi pedida.
+- **Docker Compose com healthcheck + retry, não só `depends_on`.** O container do SQL Server aceita
+  conexões na porta antes de estar pronto para autenticar; um `depends_on` simples faria o backend
+  às vezes falhar na primeira tentativa de migration. Resolvi nas duas pontas: um healthcheck no
+  `docker-compose.yml` (via `sqlcmd`) e um laço de retry com espera de 5s no próprio `Program.cs`
+  (útil também fora do Docker, se o SQL Server demorar para responder).
 
 ## Ferramentas de IA utilizadas
 
@@ -126,32 +159,51 @@ documentação), então o histórico do `git log` reflete a evolução real do t
   arquivo em `backend/dotnet-tools.json` em vez do caminho convencional
   `backend/.config/dotnet-tools.json`, que é o que `dotnet tool restore` procura por padrão.
   Movi o arquivo para o local correto.
+- **`npm ci` não funcionava dentro do container do frontend.** O `package-lock.json` (gerado no
+  Windows) estava sem duas dependências opcionais que o `@napi-rs/wasm-runtime` só resolve em
+  Linux (`@emnapi/core`, `@emnapi/runtime`), então `npm ci` (que exige fidelidade total ao lock)
+  falhava no Alpine do Dockerfile. Troquei por `npm install` nesse estágio do build, que resolve as
+  dependências para a plataforma atual em vez de exigir o lock exato.
 
 ## Como verifiquei se a solução estava correta
 
-- **Backend:** `dotnet build` (sem erros/warnings) e `dotnet test` — 33 testes passando
-  (parsing de currículo, validadores, pipeline de validação, handlers com EF Core InMemory).
-- **Banco de dados real:** apliquei a migration contra uma instância local do SQL Server
-  (`dotnet ef database update`) e conferi o `CREATE TABLE`/índices gerados.
-- **API ponta a ponta com `curl`:** cadastro manual, listagem, detalhe por id (incluindo 404 para
-  id inexistente), extração de PDF com o currículo fictício de teste (nome/e-mail/telefone
-  corretamente identificados), rejeição de arquivo inválido (extensão errada e conteúdo que não é
-  PDF de verdade), e erros de validação (campos obrigatórios, e-mail malformado) com a mensagem
-  clara devolvida pela API.
-- **Frontend:** `ng build` (build de produção sem erros), `ng test` — 12 testes passando
-  (contrato HTTP do `CandidatesService`, validação de campos obrigatórios/e-mail, validação de
-  arquivo PDF por extensão e tamanho) — e uma sessão manual no navegador cobrindo o fluxo completo
-  de cadastro manual (preenchimento → validação de campo obrigatório ao tentar salvar vazio →
-  preenchimento correto → salvar → redirecionamento para a tela de detalhes → conferência dos
-  dados exibidos → volta para a listagem confirmando o novo registro).
+- **Backend:** `dotnet build` (sem erros/warnings) e `dotnet test` — 53 testes passando (parsing de
+  currículo, validadores, pipeline de validação, repositório e handlers com EF Core InMemory,
+  incluindo paginação/busca e verificação de e-mail duplicado).
+- **Banco de dados real:** apliquei as migrations (`InitialCreate` e `AddResumeFileContent`)
+  contra uma instância local do SQL Server (`dotnet ef database update`) e conferi o
+  `CREATE TABLE`/`ALTER TABLE`/índices gerados.
+- **API ponta a ponta com `curl`:** cadastro manual, listagem paginada, busca por nome/e-mail,
+  detalhe por id (incluindo 404 para id inexistente), extração de PDF com o currículo fictício de
+  teste (nome/e-mail/telefone corretamente identificados), cadastro com PDF anexado seguido de
+  download do arquivo salvo (bytes conferidos com `file` no arquivo baixado), verificação de
+  e-mail duplicado (`check-email`), rejeição de arquivo inválido (extensão errada e conteúdo que
+  não é PDF de verdade), e erros de validação (campos obrigatórios, e-mail malformado) com a
+  mensagem clara devolvida pela API.
+- **Frontend:** `ng build` (build de produção sem erros), `ng test` — 23 testes passando (contrato
+  HTTP do `CandidatesService` incluindo paginação/busca/download, validação de
+  campos/arquivo, aviso de e-mail duplicado com debounce de busca testado via fake timers do
+  Vitest) — e sessões manuais no navegador cobrindo: cadastro manual completo, busca e paginação na
+  listagem, aviso de e-mail duplicado ao sair do campo, e download do PDF a partir da tela de
+  detalhes (conferido pela requisição de rede retornando 200).
+- **Docker Compose:** `docker compose up --build` de ponta a ponta, com o `.env` de exemplo, numa
+  máquina sem `dotnet`/`node`/SQL Server rodando fora de container. Confirmei pelos logs que o
+  backend esperou o healthcheck do SQL Server e aplicou as duas migrations sozinho num banco novo,
+  e testei os três pontos: API respondendo direto em `localhost:5044`, frontend servido pelo nginx
+  em `localhost:4200`, e o proxy `/api` do nginx para o backend funcionando (cadastrei um candidato
+  via `curl` batendo em `localhost:4200/api/candidates` e ele apareceu na listagem renderizada pelo
+  Angular). Na primeira tentativa o `npm ci` do Dockerfile do frontend falhou porque o
+  `package-lock.json` (gerado no Windows) não tinha duas dependências opcionais de
+  `@napi-rs/wasm-runtime` que só resolvem no Linux; troquei por `npm install` nesse estágio do
+  build (ver próxima seção).
 
 ## Tempo aproximado dedicado
 
-O desenvolvimento foi feito em uma única sessão contínua com o Claude Code, cobrindo desde o
-levantamento da biblioteca obrigatória até a documentação final. Estimo o equivalente a
-**3 a 4 horas** de trabalho, considerando o escopo (duas camadas completas, testes nos dois lados,
-uma migration real aplicada e verificada, e validação manual ponta a ponta em vez de apenas
-"parece que compila").
+O desenvolvimento foi feito com o Claude Code em duas sessões contínuas: a primeira entrega
+(arquitetura, cadastro manual/PDF, listagem, detalhes, Repository pattern) levou o equivalente a
+**3 a 4 horas**; os quatro extras (Docker Compose, download de PDF, paginação/busca, aviso de
+e-mail duplicado) mais **1 a 2 horas**, incluindo escrever/ajustar os testes novos e validar cada
+um manualmente antes de seguir para o próximo. Total aproximado: **4,5 a 6 horas**.
 
 ## Dificuldades, limitações e melhorias com mais tempo
 
@@ -164,16 +216,17 @@ uma migration real aplicada e verificada, e validação manual ponta a ponta em 
 - **PDFs digitalizados (imagem escaneada) não são suportados.** Não há OCR; um PDF sem texto
   selecionável retorna todos os campos vazios com um aviso claro, e o cadastro manual continua
   funcionando normalmente.
-- **O arquivo PDF em si não é armazenado**, só o nome do arquivo é guardado como metadado de
-  origem. Com mais tempo, guardaria o PDF (coluna `varbinary`/blob storage) para permitir
-  reabrir/baixar o currículo original a partir da tela de detalhes.
-- **Sem paginação/busca na listagem.** Adequado para o volume de um teste técnico; para uso real
-  seria necessário paginação, busca por nome/e-mail e filtro por área de interesse.
+- **Sem filtro por área de interesse na listagem** (só busca por nome/e-mail). Simples de
+  adicionar (`Where` a mais no repositório) se precisasse.
 - **Sem testes end-to-end (Cypress/Playwright).** A cobertura atual é unitária nos dois lados; um
   teste E2E dos dois fluxos de cadastro completos (formulário → API → banco → listagem →
   detalhes) seria o próximo passo natural.
 - **Sem pipeline de CI configurado** (ex.: GitHub Actions rodando `dotnet test` e `ng test` a cada
-  push) — faria parte de uma entrega para produção.
+  push, e talvez também um `docker compose build` de sanidade) — faria parte de uma entrega para
+  produção.
 - **Heurística de telefone assume formato brasileiro.** Funcionaria mal para currículos com
   números de outros países; seria necessário generalizar o regex ou detectar o idioma/localidade
   do documento.
+- **A senha do SQL Server no Docker Compose usa um valor padrão de exemplo** (`TrocarSenha123!`)
+  se a pessoa não criar o próprio `.env` — funcional para avaliação local, mas o README deixa claro
+  que não deve ser usada além disso.

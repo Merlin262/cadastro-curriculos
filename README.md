@@ -2,7 +2,9 @@
 
 Aplicação para cadastro e consulta de candidatos, desenvolvida como desafio técnico. Permite
 cadastro manual e cadastro a partir de um PDF de currículo (o backend extrai o texto e tenta
-identificar nome, e-mail e telefone para pré-preencher o formulário).
+identificar nome, e-mail e telefone para pré-preencher o formulário), com listagem paginada e
+pesquisável, aviso (não bloqueante) de e-mail já cadastrado, e download do PDF original a partir
+da tela de detalhes.
 
 Veja também [`DESENVOLVIMENTO.md`](DESENVOLVIMENTO.md) para o relato do processo de
 desenvolvimento, decisões técnicas e uso de IA.
@@ -21,6 +23,7 @@ desenvolvimento, decisões técnicas e uso de IA.
 | UI | Angular Material | 21.2 |
 | Testes frontend | Vitest (via `@angular/build:unit-test`) | — |
 | Banco de dados | SQL Server | 2019+ (LocalDB também funciona) |
+| Orquestração local | Docker Compose | opcional — ver seção dedicada abaixo |
 
 > ⚠️ **Atenção ao instalar pacotes .NET manualmente:** durante o desenvolvimento identificamos que
 > o pacote `UglyToad.PdfPig` no NuGet.org **não é o pacote oficial** do projeto PdfPig — é um
@@ -43,9 +46,28 @@ backend/            Solução .NET (Clean Architecture: Domain/Application/Infra
 frontend/            Aplicação Angular (standalone + Angular Material)
 samples/
   curriculo-exemplo-joao-silva.pdf     Currículo fictício para testar a importação
+docker-compose.yml    Orquestra SQL Server + backend + frontend (ver seção abaixo)
 ```
 
-## Pré-requisitos
+## Rodando tudo com Docker Compose (forma mais rápida)
+
+Não precisa instalar .NET, Node nem SQL Server na máquina — só Docker.
+
+```bash
+cp .env.example .env   # opcional: edite a senha do SQL Server antes de continuar
+docker compose up --build
+```
+
+- Frontend: http://localhost:4200
+- API: http://localhost:5044 (Swagger em http://localhost:5044/swagger)
+- SQL Server: localhost:1433 (usuário `sa`, senha definida em `.env`)
+
+O backend aplica as migrations automaticamente assim que o SQL Server do container fica saudável
+(há um healthcheck + retry para isso — a primeira subida pode levar ~30s a mais enquanto o SQL
+Server inicializa). Para derrubar tudo: `docker compose down` (adicione `-v` para também apagar o
+volume do banco).
+
+## Pré-requisitos (rodando sem Docker)
 
 - [.NET SDK 8.0+](https://dotnet.microsoft.com/download)
 - [Node.js 20+](https://nodejs.org/) e npm
@@ -118,15 +140,16 @@ API estiver rodando em outra porta/host.
 
 ## Rodando os testes
 
-**Backend** (33 testes: parsing de currículo, validadores, pipeline de validação, handlers com EF
-Core InMemory):
+**Backend** (53 testes: parsing de currículo, validadores, pipeline de validação, repositório e
+handlers com EF Core InMemory):
 
 ```bash
 cd backend
 dotnet test
 ```
 
-**Frontend** (12 testes: contrato HTTP do `CandidatesService` e validações do formulário/arquivo):
+**Frontend** (23 testes: contrato HTTP do `CandidatesService`, validações do formulário/arquivo,
+aviso de e-mail duplicado, busca/paginação da listagem):
 
 ```bash
 cd frontend
@@ -144,7 +167,9 @@ reconhece bem — veja as limitações conhecidas no `DESENVOLVIMENTO.md`.
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/candidates` | Lista os candidatos cadastrados |
+| `GET` | `/api/candidates?search=&page=&pageSize=` | Lista paginada de candidatos, com busca opcional por nome/e-mail |
 | `GET` | `/api/candidates/{id}` | Detalhes de um candidato |
-| `POST` | `/api/candidates` | Cadastra um candidato (usado pelo fluxo manual e pelo fluxo com PDF) |
+| `POST` | `/api/candidates` | Cadastra um candidato (`multipart/form-data`; usado pelo fluxo manual e pelo fluxo com PDF; aceita um `resumeFile` opcional para guardar o PDF original) |
+| `GET` | `/api/candidates/{id}/resume` | Baixa o PDF original do candidato, quando houver um armazenado (404 caso contrário) |
+| `GET` | `/api/candidates/check-email?email=` | Verificação leve e não bloqueante de e-mail já cadastrado (usada pelo formulário) |
 | `POST` | `/api/candidates/extract-resume` | Recebe um PDF (`multipart/form-data`, campo `file`) e retorna nome/e-mail/telefone identificados, sem salvar nada |
