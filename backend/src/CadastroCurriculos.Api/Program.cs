@@ -39,10 +39,27 @@ var app = builder.Build();
 
 // Applies pending EF Core migrations automatically on startup so `dotnet run` is enough
 // to get a ready-to-use database (see README.md for the manual `dotnet ef` alternative).
+// Retries with a delay because in Docker Compose the SQL Server container's port can
+// accept connections slightly before the server is actually ready to authenticate.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    const int maxAttempts = 8;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            dbContext.Database.Migrate();
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            logger.LogWarning(ex, "Falha ao aplicar migrations (tentativa {Attempt}/{MaxAttempts}). Tentando novamente...", attempt, maxAttempts);
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
+    }
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
