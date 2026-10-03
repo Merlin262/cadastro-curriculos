@@ -3,10 +3,8 @@
 [![CI](https://github.com/Merlin262/cadastro-curriculos/actions/workflows/ci.yml/badge.svg)](https://github.com/Merlin262/cadastro-curriculos/actions/workflows/ci.yml)
 
 Aplicação para cadastro e consulta de candidatos, desenvolvida como desafio técnico. Permite
-cadastro manual e cadastro a partir de um PDF de currículo (o backend extrai o texto e tenta
-identificar nome, e-mail e telefone para pré-preencher o formulário), com listagem paginada e
-pesquisável, aviso (não bloqueante) de e-mail já cadastrado, e download do PDF original a partir
-da tela de detalhes.
+cadastro manual e cadastro a partir de um PDF de currículo, com listagem paginada e
+pesquisável, e download do PDF original.
 
 Veja também [`DESENVOLVIMENTO.md`](DESENVOLVIMENTO.md) para o relato do processo de
 desenvolvimento, decisões técnicas e uso de IA.
@@ -27,33 +25,7 @@ desenvolvimento, decisões técnicas e uso de IA.
 | Banco de dados | SQL Server | 2019+ (LocalDB também funciona) |
 | Orquestração local | Docker Compose | opcional — ver seção dedicada abaixo |
 
-> ⚠️ **Atenção ao instalar pacotes .NET manualmente:** durante o desenvolvimento identificamos que
-> o pacote `UglyToad.PdfPig` no NuGet.org **não é o pacote oficial** do projeto PdfPig — é um
-> pacote de outro dono (`grinay`) com uma versão `1.7.0-custom-5` propositalmente numerada para
-> parecer mais nova que qualquer versão legítima. O pacote oficial é **`PdfPig`** (donos `BobLd`,
-> `EliotJones`, `PdfPig`, https://github.com/UglyToad/PdfPig). Este repositório já usa o pacote
-> correto; documentamos isso aqui para quem for reproduzir o setup manualmente.
-
-## Estrutura do repositório
-
-```
-backend/            Solução .NET (Clean Architecture: Domain/Application/Infrastructure/Api)
-  src/
-    CadastroCurriculos.Domain          Entidade Candidate e ICandidateRepository (sem dependências externas)
-    CadastroCurriculos.Application     Commands/Queries (CQRS via LiteMediator), validação, DTOs
-    CadastroCurriculos.Infrastructure  CandidateRepository (EF Core/SQL Server), leitura de PDF (PdfPig), migrations
-    CadastroCurriculos.Api             Controllers, middleware de erros, Program.cs
-  tests/
-    CadastroCurriculos.Tests           Testes unitários (xUnit)
-frontend/            Aplicação Angular (standalone + Angular Material)
-samples/
-  curriculo-exemplo-joao-silva.pdf     Currículo fictício para testar a importação
-docker-compose.yml    Orquestra SQL Server + backend + frontend (ver seção abaixo)
-```
-
-## Rodando tudo com Docker Compose (forma mais rápida)
-
-Não precisa instalar .NET, Node nem SQL Server na máquina — só Docker.
+Execução
 
 ```bash
 cp .env.example .env   # opcional: edite a senha do SQL Server antes de continuar
@@ -87,9 +59,7 @@ autenticação integrada do Windows contra uma instância local:
 }
 ```
 
-Se você usa SQL Server com usuário/senha (ex.: em Linux/Docker), sobrescreva localmente — **nunca
-commite credenciais reais**. A forma mais simples é definir a variável de ambiente (funciona sem
-editar nenhum arquivo, inclusive em CI):
+Se você usa SQL Server com usuário/senha (ex.: em Linux/Docker), sobrescreva localmente. A forma mais simples é definir a variável de ambiente:
 
 ```bash
 export ConnectionStrings__DefaultConnection="Server=localhost;Database=CadastroCurriculosDb;User Id=sa;Password=SUA_SENHA_AQUI;TrustServerCertificate=True"
@@ -166,15 +136,4 @@ Os dois suítes também rodam automaticamente a cada `push`/`pull request` via G
 Use o currículo fictício em [`samples/curriculo-exemplo-joao-silva.pdf`](samples/curriculo-exemplo-joao-silva.pdf)
 na tela de novo cadastro ("Enviar currículo em PDF"). Ele foi montado para que nome, e-mail e
 telefone apareçam nas primeiras linhas do documento, layout que a heurística de extração
-reconhece bem — veja as limitações conhecidas no `DESENVOLVIMENTO.md`.
-
-## Principais endpoints da API
-
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/candidates?search=&page=&pageSize=` | Lista paginada de candidatos, com busca opcional por nome/e-mail |
-| `GET` | `/api/candidates/{id}` | Detalhes de um candidato |
-| `POST` | `/api/candidates` | Cadastra um candidato (`multipart/form-data`; usado pelo fluxo manual e pelo fluxo com PDF; aceita um `resumeFile` opcional para guardar o PDF original) |
-| `GET` | `/api/candidates/{id}/resume` | Baixa o PDF original do candidato, quando houver um armazenado (404 caso contrário) |
-| `GET` | `/api/candidates/check-email?email=` | Verificação leve e não bloqueante de e-mail já cadastrado (usada pelo formulário) |
-| `POST` | `/api/candidates/extract-resume` | Recebe um PDF (`multipart/form-data`, campo `file`) e retorna nome/e-mail/telefone identificados, sem salvar nada |
+reconhece bem.
